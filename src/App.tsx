@@ -18,13 +18,25 @@ const CR_TIERS = [
   { value: '17+', label: 'CR 17+', examplesKey: 'cr.examples.17+' },
 ];
 
-const RARITY_COLORS: Record<string, string> = {
-  common: 'text-gray-400',
-  uncommon: 'text-green-400',
-  rare: 'text-blue-400',
-  'very rare': 'text-purple-400',
-  legendary: 'text-orange-400',
+const RARITY_COLORS_DARK: Record<string, string> = {
+  common: 'text-gray-200',
+  uncommon: 'text-green-200',
+  rare: 'text-blue-200',
+  'very rare': 'text-purple-200',
+  legendary: 'text-orange-200',
 };
+
+const RARITY_COLORS_LIGHT: Record<string, string> = {
+  common: 'text-gray-800',
+  uncommon: 'text-green-800',
+  rare: 'text-blue-800',
+  'very rare': 'text-purple-800',
+  legendary: 'text-orange-800',
+};
+
+function getRarityColor(rarity: string, isDark: boolean): string {
+  return (isDark ? RARITY_COLORS_DARK : RARITY_COLORS_LIGHT)[rarity] || (isDark ? 'text-gray-300' : 'text-gray-700');
+}
 
 const RARITY_BG: Record<string, string> = {
   common: 'bg-gray-500/20 border-gray-500/40',
@@ -68,6 +80,7 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
   const [history, setHistory] = useState<TreasureResult[]>(() => {
     try {
       const saved = localStorage.getItem('rollHistory');
@@ -136,13 +149,19 @@ export default function App() {
         setHistory(prev => [newResult!, ...prev].slice(0, 50));
       }
 
+      if (newSingle) {
+        setAnnouncement(t('status.generatedItem') + ': ' + getItemName(newSingle.name, lang));
+      } else if (newResult) {
+        setAnnouncement(t('status.generatedTreasure'));
+      }
+
       setIsRolling(false);
 
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }, 600);
-  }, [edition, treasureType, cr, theme2024, rarity2024]);
+  }, [edition, treasureType, cr, theme2024, rarity2024, lang, t]);
 
   // Copy to clipboard
   const copyResult = useCallback(() => {
@@ -209,21 +228,21 @@ export default function App() {
   if (screen === 'welcome') {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center px-4 py-8 transition-colors duration-300 ${isDark ? 'bg-[#0d0d1a] text-white' : 'bg-gray-50 text-gray-900'}`}>
-        <div className="w-full max-w-md text-center space-y-8 animate-fadeIn">
+        <main className="w-full max-w-md text-center space-y-8 animate-fadeIn">
           {/* Logo */}
           <div className="space-y-4">
             <div className="text-7xl animate-float">🎲</div>
             <h1 className="text-3xl font-bold tracking-tight">
               {t('app.title')}
             </h1>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('app.subtitle')}
             </p>
           </div>
 
           {/* Edition Selection */}
           <div className="space-y-3">
-            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('edition.label')}
             </label>
             <div className="flex gap-3 justify-center">
@@ -231,6 +250,7 @@ export default function App() {
                 <button
                   key={ed}
                   onClick={() => setEdition(ed)}
+                  aria-pressed={edition === ed}
                   className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all min-h-[56px] ${
                     edition === ed
                       ? isDark
@@ -253,6 +273,8 @@ export default function App() {
               <button
                 key={l}
                 onClick={() => setLang(l as Lang)}
+                aria-pressed={lang === l}
+                aria-label={t('language.' + l)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all min-h-[48px] flex items-center gap-2 ${
                   lang === l
                     ? isDark
@@ -260,7 +282,7 @@ export default function App() {
                       : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                     : isDark
                       ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <span className="text-lg">{flag}</span>
@@ -271,14 +293,15 @@ export default function App() {
 
           {/* Theme Toggle */}
           <div className="space-y-2">
-            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('settings.theme')}
             </label>
-            <div className="flex justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {(['light', 'dark', 'system'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setThemeMode(mode)}
+                  aria-pressed={themeMode === mode}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all min-h-[44px] flex items-center gap-1.5 ${
                     themeMode === mode
                       ? isDark
@@ -286,7 +309,7 @@ export default function App() {
                         : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                       : isDark
                         ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   <span>{mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '💻'}</span>
@@ -309,12 +332,12 @@ export default function App() {
           </button>
 
           {/* Links */}
-          <div className="flex justify-center gap-4 pt-2">
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
             <a
               href="https://ko-fi.com/noemimarcolini"
               target="_blank"
               rel="noopener noreferrer"
-              className={`text-sm flex items-center gap-1.5 transition-colors ${isDark ? 'text-amber-400/80 hover:text-amber-300' : 'text-amber-600 hover:text-amber-500'}`}
+              className={`text-sm flex items-center gap-1.5 min-h-[44px] transition-colors ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-800'}`}
             >
               ☕ {t('support.creator')}
             </a>
@@ -322,7 +345,7 @@ export default function App() {
               href="https://gdr-sys-portfolio2026.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className={`text-sm flex items-center gap-1.5 transition-colors ${isDark ? 'text-indigo-400/80 hover:text-indigo-300' : 'text-indigo-500 hover:text-indigo-400'}`}
+              className={`text-sm flex items-center gap-1.5 min-h-[44px] transition-colors ${isDark ? 'text-indigo-300 hover:text-indigo-200' : 'text-indigo-700 hover:text-indigo-800'}`}
             >
               ⚔️ {t('more.tools')}
             </a>
@@ -331,20 +354,20 @@ export default function App() {
           {/* About */}
           <button
             onClick={() => setShowAbout(true)}
-            className={`text-sm ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+            className={`text-sm min-h-[44px] px-2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
           >
             {t('app.version')} — {t('about.title')}
           </button>
-        </div>
+        </main>
 
         {/* About Modal */}
         {showAbout && (
-          <BottomSheet onClose={() => setShowAbout(false)} isDark={isDark}>
+          <BottomSheet onClose={() => setShowAbout(false)} isDark={isDark} closeLabel={t('about.close')} dialogLabel={t('about.title')}>
             <h2 className="text-xl font-bold mb-4">{t('about.title')}</h2>
             <p className={`mb-4 text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
               {t('about.description')}
             </p>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('about.credits')}
             </p>
             <button
@@ -377,20 +400,23 @@ export default function App() {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setLang(lang === 'en' ? 'it' : lang === 'it' ? 'ru' : 'en')}
-              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'}`}
+              aria-label={t('header.language') + ': ' + t('language.' + lang)}
+              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-700 hover:bg-gray-200'}`}
             >
               {lang === 'en' ? '🇬🇧' : lang === 'it' ? '🇮🇹' : '🇷🇺'} {lang.toUpperCase()}
             </button>
             <button
               onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : themeMode === 'light' ? 'system' : 'dark')}
-              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'}`}
+              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-700 hover:bg-gray-200'}`}
               title={t('settings.theme')}
+              aria-label={t('header.theme') + ': ' + t('settings.' + themeMode)}
             >
               {themeMode === 'dark' ? '🌙' : themeMode === 'light' ? '☀️' : '💻'}
             </button>
             <button
               onClick={() => setShowHistory(true)}
-              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'}`}
+              aria-label={t('header.history')}
+              className={`text-sm min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors ${isDark ? 'text-gray-200 hover:bg-white/10' : 'text-gray-700 hover:bg-gray-200'}`}
             >
               📜
             </button>
@@ -408,6 +434,7 @@ export default function App() {
                 setEdition(ed);
                 if (ed === '2014' && treasureType === 'magicitem') setTreasureType('hoard');
               }}
+              aria-pressed={edition === ed}
               className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${
                 edition === ed
                   ? isDark
@@ -425,7 +452,7 @@ export default function App() {
 
         {/* Treasure Type */}
         <div className="space-y-2">
-          <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {t('type.label')}
           </label>
           <div className="flex gap-2">
@@ -433,6 +460,7 @@ export default function App() {
               <button
                 key={type}
                 onClick={() => setTreasureType(type as typeof treasureType)}
+                aria-pressed={treasureType === type}
                 className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all min-h-[48px] ${
                   treasureType === type
                     ? isDark
@@ -440,7 +468,7 @@ export default function App() {
                       : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                     : isDark
                       ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {type === 'individual' ? '👤' : type === 'hoard' ? '💰' : '✨'}{' '}
@@ -453,7 +481,7 @@ export default function App() {
         {/* CR Tier Selector (for individual and hoard) - come da DMG */}
         {treasureType !== 'magicitem' && (
           <div className="space-y-2">
-            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('cr.label')}
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -464,6 +492,7 @@ export default function App() {
                   <button
                     key={tier.value}
                     onClick={() => setCr(tierVal)}
+                    aria-pressed={active}
                     className={`text-left p-3 rounded-xl transition-all min-h-[56px] ${
                       active
                         ? isDark
@@ -475,7 +504,7 @@ export default function App() {
                     }`}
                   >
                     <div className="text-base font-bold">{tier.label}</div>
-                    <div className={`text-xs mt-0.5 ${active ? (isDark ? 'text-indigo-200' : 'text-indigo-700') : (isDark ? 'text-gray-500' : 'text-gray-500')}`}>
+                    <div className={`text-xs mt-0.5 ${active ? (isDark ? 'text-indigo-200' : 'text-indigo-700') : (isDark ? 'text-gray-400' : 'text-gray-600')}`}>
                       {t(tier.examplesKey)}
                     </div>
                   </button>
@@ -489,7 +518,7 @@ export default function App() {
         {edition === '2024' && treasureType === 'magicitem' && (
           <>
             <div className="space-y-2">
-              <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {t('theme.label')}
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -497,6 +526,7 @@ export default function App() {
                   <button
                     key={th}
                     onClick={() => setTheme2024(th)}
+                    aria-pressed={theme2024 === th}
                     className={`py-3 rounded-xl text-sm font-medium transition-all min-h-[48px] ${
                       theme2024 === th
                         ? isDark
@@ -504,7 +534,7 @@ export default function App() {
                           : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                         : isDark
                           ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     {t(`theme.${th.toLowerCase()}`)}
@@ -514,7 +544,7 @@ export default function App() {
             </div>
 
             <div className="space-y-2">
-              <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {t('rarity.label')}
               </label>
               <div className="flex flex-wrap gap-2">
@@ -522,13 +552,14 @@ export default function App() {
                   <button
                     key={r}
                     onClick={() => setRarity2024(r)}
+                    aria-pressed={rarity2024 === r}
                     className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all min-h-[44px] border ${
                       rarity2024 === r
                         ? RARITY_BG[r] || 'bg-white/15 border-white/20'
                         : isDark
                           ? 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10'
-                          : 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'
-                    } ${rarity2024 === r ? RARITY_COLORS[r] || '' : ''}`}
+                          : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'
+                    } ${rarity2024 === r ? getRarityColor(r, isDark) : ''}`}
                   >
                     {t(`rarity.${r === 'very rare' ? 'veryrare' : r}`)}
                   </button>
@@ -554,6 +585,10 @@ export default function App() {
             result || singleItem ? t('roll.again') : t('roll.button')
           )}
         </button>
+
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </div>
 
         {/* Results */}
         <div ref={resultRef}>
@@ -673,50 +708,52 @@ export default function App() {
 
       {/* Item Details Bottom Sheet */}
       {selectedItem && (
-        <BottomSheet onClose={() => setSelectedItem(null)} isDark={isDark}>
+        <BottomSheet onClose={() => setSelectedItem(null)} isDark={isDark} closeLabel={t('about.close')} dialogLabel={getItemName(selectedItem, lang)}>
           <ItemDetails name={selectedItem} lang={lang} isDark={isDark} t={t} />
         </BottomSheet>
       )}
 
       {/* History Bottom Sheet */}
       {showHistory && (
-        <BottomSheet onClose={() => setShowHistory(false)} isDark={isDark}>
+        <BottomSheet onClose={() => setShowHistory(false)} isDark={isDark} closeLabel={t('about.close')} dialogLabel={t('history.title')}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">{t('history.title')}</h2>
             {history.length > 0 && (
               <button
                 onClick={() => { setHistory([]); localStorage.removeItem('rollHistory'); }}
-                className="text-sm text-red-400 hover:text-red-300"
+                className={`text-sm min-h-[44px] px-2 ${isDark ? 'text-red-300 hover:text-red-200' : 'text-red-700 hover:text-red-800'}`}
               >
                 {t('history.clear')}
               </button>
             )}
           </div>
           {history.length === 0 ? (
-            <p className={`text-center py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('history.empty')}</p>
+            <p className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('history.empty')}</p>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {history.map((h, i) => (
-                <div
+                <button
+                  type="button"
                   key={i}
-                  className={`p-3 rounded-xl text-sm ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}
+                  className={`w-full text-left p-3 rounded-xl text-sm ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}
                   onClick={() => { setResult(h); setShowHistory(false); }}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold">
-                      {h.edition} — CR {h.cr} — {h.type === 'individual' ? '👤' : '💰'}
+                      {h.edition} — CR {h.cr} — <span aria-hidden="true">{h.type === 'individual' ? '👤' : '💰'}</span>
+                      <span className="sr-only"> — {t('type.' + h.type)}</span>
                     </span>
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       {new Date(h.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {h.coins.filter(c => c.amount > 0).map(c => `${formatNumber(c.amount)} ${t(c.type)}`).join(', ')}
                     {h.magicItems.length > 0 && ` + ${h.magicItems.length} ✨`}
                     {h.gems.length > 0 && ` + ${h.gems.length} 💎`}
                     {h.art.length > 0 && ` + ${h.art.length} 🎨`}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -733,10 +770,10 @@ function ResultSection({ title, icon, isDark, children }: {
 }) {
   return (
     <div className={`rounded-2xl p-4 space-y-3 ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200 shadow-sm'}`}>
-      <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+      <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
         <span>{icon}</span>
         <span>{title}</span>
-      </h3>
+      </h2>
       {children}
     </div>
   );
@@ -747,7 +784,7 @@ function MagicItemCard({ item, lang, isDark, onSelect, t }: {
 }) {
   const data = getMagicItemData(item.name);
   const rarity = data?.rarity || 'unknown';
-  const rarityColor = RARITY_COLORS[rarity] || (isDark ? 'text-gray-400' : 'text-gray-500');
+  const rarityColor = getRarityColor(rarity, isDark);
   const rarityLabel = rarity !== 'unknown' ? t(`rarity.${rarity === 'very rare' ? 'veryrare' : rarity}`) : '';
 
   return (
@@ -764,7 +801,7 @@ function MagicItemCard({ item, lang, isDark, onSelect, t }: {
             <p className={`text-xs mt-0.5 ${rarityColor}`}>{rarityLabel}</p>
           )}
         </div>
-        <span className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>ℹ️</span>
+        <span aria-hidden="true" className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>ℹ️</span>
       </div>
     </button>
   );
@@ -777,7 +814,7 @@ function ItemDetails({ name, lang, isDark, t }: {
   const displayName = getItemName(name, lang);
   const description = getItemDescription(name, lang);
   const rarity = data?.rarity || '';
-  const rarityColor = RARITY_COLORS[rarity] || '';
+  const rarityColor = getRarityColor(rarity, isDark);
   const rarityLabel = rarity ? t(`rarity.${rarity === 'very rare' ? 'veryrare' : rarity}`) : '';
 
   return (
@@ -789,7 +826,7 @@ function ItemDetails({ name, lang, isDark, t }: {
         </span>
       )}
       <div>
-        <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           {t('item.description')}
         </h3>
         <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -797,7 +834,7 @@ function ItemDetails({ name, lang, isDark, t }: {
         </p>
       </div>
       {lang !== 'en' && data && (
-        <div className={`text-xs italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+        <div className={`text-xs italic ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           {t('item.originalEnglish')}: {data.nameEN}
         </div>
       )}
@@ -805,37 +842,92 @@ function ItemDetails({ name, lang, isDark, t }: {
   );
 }
 
-function BottomSheet({ onClose, isDark, children }: {
-  onClose: () => void; isDark: boolean; children: React.ReactNode;
+function BottomSheet({ onClose, isDark, children, closeLabel, dialogLabel }: {
+  onClose: () => void;
+  isDark: boolean;
+  children: React.ReactNode;
+  closeLabel: string;
+  dialogLabel: string;
 }) {
-  // Prevent body scroll when sheet is open
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
-    const original = document.body.style.overflow;
+    const originalOverflow = document.body.style.overflow;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = original; };
+    panelRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = originalOverflow;
+      previousFocusRef.current?.focus();
+    };
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col"
-      onClick={onClose}
-    >
-      {/* Backdrop - top area */}
-      <div className="flex-1 bg-black/60 animate-fadeIn" />
-
-      {/* Sheet at bottom */}
+    <div className="fixed inset-0 z-50 flex flex-col" onClick={onClose}>
+      <div className="flex-1 bg-black/60 animate-fadeIn" aria-hidden="true" />
       <div
-        className={`w-full max-w-lg mx-auto rounded-t-3xl p-6 overflow-y-auto animate-slideUp ${
-          isDark ? 'bg-[#1a1a2e]' : 'bg-white'
-        }`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={dialogLabel}
+        tabIndex={-1}
+        className={'relative w-full max-w-lg mx-auto rounded-t-3xl p-6 overflow-y-auto animate-slideUp ' +
+          (isDark ? 'bg-[#1a1a2e]' : 'bg-white')}
         style={{
           maxHeight: '80vh',
           paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Handle bar */}
-        <div className={`w-10 h-1 rounded-full mx-auto mb-4 ${isDark ? 'bg-white/20' : 'bg-gray-300'}`} />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={closeLabel}
+          className={'absolute top-4 right-4 min-w-[44px] min-h-[44px] rounded-full text-xl flex items-center justify-center ' +
+            (isDark ? 'text-gray-300 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-100')}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+        <div
+          className={'w-10 h-1 rounded-full mx-auto mb-4 ' + (isDark ? 'bg-white/20' : 'bg-gray-300')}
+          aria-hidden="true"
+        />
         {children}
       </div>
     </div>
